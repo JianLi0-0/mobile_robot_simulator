@@ -8,6 +8,8 @@
 #include "tf/transform_datatypes.h"
 #include <tf/transform_listener.h>
 
+#include "geometry_msgs/Polygon.h"
+
 #include <math.h>
 #include <random>
 
@@ -64,11 +66,15 @@ private:
     
     /*! get occupancy of specified cell */
     int get_map_occupancy(int x, int y);
+
+    void obstacleCallback(const geometry_msgs::Polygon& msg);
     
     
     ros::NodeHandle * nh_ptr;
     ros::Publisher laser_pub; // scan publisher
-    tf::TransformListener tl; 
+    tf::TransformListener tl;
+    ros::Subscriber obstacle_sub;
+    ros::Publisher new_map_pub;
     
     ros::Timer loop_timer; // timer for the update loop
     bool is_running;

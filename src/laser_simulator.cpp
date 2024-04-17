@@ -8,6 +8,8 @@ LaserScannerSimulator::LaserScannerSimulator(ros::NodeHandle *nh)
     // get parameters
     get_params();
     laser_pub = nh_ptr->advertise<sensor_msgs::LaserScan>(l_scan_topic,10); // scan publisher
+    new_map_pub = nh_ptr->advertise<nav_msgs::OccupancyGrid>("/simulated_obstacle_map",10);
+    obstacle_sub = nh_ptr->subscribe("/simulated_obstacle", 1,&LaserScannerSimulator::obstacleCallback, this);
     // get map
     get_map();
     ROS_INFO("Initialized laser scanner simulator");
@@ -16,6 +18,17 @@ LaserScannerSimulator::LaserScannerSimulator(ros::NodeHandle *nh)
 LaserScannerSimulator::~LaserScannerSimulator()
 {
     if (is_running) stop();
+}
+
+void LaserScannerSimulator::obstacleCallback(const geometry_msgs::Polygon& msg)
+{
+    for (auto point : msg.points)
+    {
+        ROS_INFO("Obstacle at x: %f, y: %f", point.x, point.y);
+        int x, y;
+        get_world2map_coordinates(point.x,point.y,&x,&y);
+        map.data[y*map.info.width + x] = 80;
+    }
 }
 
 void LaserScannerSimulator::get_params()
@@ -60,6 +73,9 @@ void LaserScannerSimulator::update_loop(const ros::TimerEvent& event)
 {
     // If we don't have a map, try to get one
     if (!have_map) get_map();
+
+    new_map_pub.publish(map);
+
     // first, get the pose of the laser in the map frame
     double l_x, l_y, l_theta;
     get_laser_pose(&l_x,&l_y,&l_theta);
